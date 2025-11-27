@@ -327,31 +327,48 @@ socket.on('stateUpdate', (state) => {
     const isMyTurn = state.currentPlayerId === socket.id;
     const playBtn = document.getElementById('btn-play');
     const challBtn = document.getElementById('btn-challenge');
-
-    // 轮到我时的视觉提示
-    if (isMyTurn && state.gameState === 'playing') {
-        document.body.classList.add('my-turn');
-    } else {
-        document.body.classList.remove('my-turn');
-    }
-
-    // 只有轮到我且游戏状态为playing时，可以出牌
-    playBtn.disabled = !(isMyTurn && state.gameState === 'playing');
-
-    // 只有轮到我，且上一手有人出牌时，可以质疑
-    if (isMyTurn && state.lastPlay && state.gameState === 'playing') {
-        challBtn.style.display = 'inline-block';
-    } else {
-        challBtn.style.display = 'none';
-    }
-
-    // 王的审判按钮：任何活着的玩家都可以对当前出牌人发起审判（除了自己）
     const kingJudgmentBtn = document.getElementById('btn-king-judgment');
     const myPlayer = state.players.find(p => p.id === socket.id);
-    if (state.gameState === 'playing' && state.lastPlay && myPlayer && myPlayer.isAlive && state.lastPlay.playerId !== socket.id) {
-        kingJudgmentBtn.style.display = 'inline-block';
-    } else {
+
+    // 在轮盘赌状态下，隐藏所有游戏按钮
+    if (state.gameState === 'roulette') {
+        playBtn.style.display = 'none';
+        challBtn.style.display = 'none';
         kingJudgmentBtn.style.display = 'none';
+        document.body.classList.remove('my-turn');
+    } else if (state.gameState === 'playing') {
+        // 游戏进行中，显示相关按钮
+        playBtn.style.display = 'inline-block';
+
+        // 轮到我时的视觉提示
+        if (isMyTurn) {
+            document.body.classList.add('my-turn');
+        } else {
+            document.body.classList.remove('my-turn');
+        }
+
+        // 只有轮到我且游戏状态为playing时，可以出牌
+        playBtn.disabled = !isMyTurn;
+
+        // 只有轮到我，且上一手有人出牌时，可以质疑
+        if (isMyTurn && state.lastPlay) {
+            challBtn.style.display = 'inline-block';
+        } else {
+            challBtn.style.display = 'none';
+        }
+
+        // 王的审判按钮：任何活着的玩家都可以对当前出牌人发起审判（除了自己）
+        if (state.lastPlay && myPlayer && myPlayer.isAlive && state.lastPlay.playerId !== socket.id) {
+            kingJudgmentBtn.style.display = 'inline-block';
+        } else {
+            kingJudgmentBtn.style.display = 'none';
+        }
+    } else {
+        // 其他状态（大厅、游戏结束等）
+        playBtn.style.display = 'none';
+        challBtn.style.display = 'none';
+        kingJudgmentBtn.style.display = 'none';
+        document.body.classList.remove('my-turn');
     }
 
     // 处理轮盘赌

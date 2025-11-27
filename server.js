@@ -124,9 +124,26 @@ function sendGameLog(message, type = 'info') {
 }
 
 function updateGame(logMsg = "") {
-    // 如果没有玩家或者 turnIndex 无效，不发送更新
-    if (players.length === 0 || !players[turnIndex]) {
+    // 如果没有玩家，不发送更新
+    if (players.length === 0) {
         return;
+    }
+
+    // 在轮盘赌状态下，currentPlayerId 应该是 rouletteVictim
+    // 在普通游戏状态下，currentPlayerId 是 players[turnIndex].id
+    let currentPlayerId;
+    if (gameState === 'roulette' && rouletteVictim) {
+        currentPlayerId = rouletteVictim;
+    } else if (players[turnIndex]) {
+        currentPlayerId = players[turnIndex].id;
+    } else {
+        // 如果 turnIndex 无效，使用第一个活着的玩家
+        const firstAlive = players.find(p => p.isAlive);
+        currentPlayerId = firstAlive ? firstAlive.id : (players[0] ? players[0].id : null);
+    }
+
+    if (!currentPlayerId) {
+        return; // 没有有效的玩家ID，不发送更新
     }
 
     const publicData = {
@@ -138,7 +155,7 @@ function updateGame(logMsg = "") {
             revealed: lastPlay.revealed || false,
             actualCards: lastPlay.revealed ? lastPlay.actualCards : undefined
         } : null,
-        currentPlayerId: players[turnIndex].id,
+        currentPlayerId: currentPlayerId,
         rouletteVictim,
         challengerId,
         lastDeadPlayer,
